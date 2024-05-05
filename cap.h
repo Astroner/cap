@@ -7,22 +7,25 @@ typedef enum Cap_ItemType {
     CAP_ARG = 2,
 } Cap_ItemType;
 
+typedef union Cap_ItemValue {
+    struct {
+        char ch;
+        char* attached;
+    } flag;
+
+    char* arg;
+
+    struct {
+        char* str;
+        int length;
+        int terminated;
+        char* attached;
+    } longFlag;
+} Cap_ItemValue;
+
 typedef struct Cap_Item {
     Cap_ItemType type;
-    union {
-        struct {
-            char ch;
-            char* attached;
-        } flag;
-        char* arg;
-        struct {
-            char* str;
-            int length;
-            int terminated;
-            char* attached;
-        } longFlag;
-    } value;
-    
+    Cap_ItemValue value;
 } Cap_Item;
 
 typedef struct Cap_Iterator {
