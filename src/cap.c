@@ -112,3 +112,18 @@ int Cap_Next(Cap_Iterator* iterator, Cap_Item* item) {
 int Cap_Check(Cap_Iterator* iterator, Cap_Item* item) {
     return CapInternalRead(iterator, item, 1);
 }
+
+char* Cap_Value(Cap_Iterator* iterator, Cap_Item* item) {
+    if(item->type == CAP_ARG) return NULL;
+
+    if(item->value.attached) return item->value.attached;
+
+    Cap_Item value;
+    Cap_Check(iterator, &value);
+
+    if(value.type != CAP_ARG) return NULL;
+
+    Cap_Next(iterator, NULL);
+
+    return value.value.arg;
+}

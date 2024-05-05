@@ -1,6 +1,13 @@
 # Hi there!
 This is Cap, a [single-file](https://raw.githubusercontent.com/Astroner/cap/master/cap.h) CLI arguments parsing lib for C.
 
+## Table of content
+ - [Supported formats](#supported-formats)
+ - [How to use](#how-to-use)
+ - [Helper functions](#helper-functions)
+     - [Cap_Check](#cap_check)
+     - [Cap_Value](#cap_value)
+
 ## Supported formats
  - common arguments - ```program arg1 arg2 arg3```
  - single char flags - ```program -b -d```
@@ -67,18 +74,61 @@ typedef enum Cap_ItemType {
 **Cap_ItemValue** is a union that conditionally stores info related to the type:
 ```c
 typedef union Cap_ItemValue {
+    char* attached; // value attached by '=' (only for flags)
+
     struct {
-        char ch;
         char* attached; // value attached by '='
+        char ch;
     } flag; // single char flag
 
     char* arg; // general arg
 
     struct {
+        char* attached; // value attached by '='
         char* str;
         int length;
         int terminated; // is the flag string nul-terminated
-        char* attached; // value attached by '='
     } longFlag; // long flag
 } Cap_ItemValue;
+```
+
+## Helper functions
+### Cap_Check
+This function checks next argument without moving the iterator:
+```c
+int Cap_Check(Cap_Iterator* iterator, Cap_Item* item);
+```
+ - **returns** - 0 if no args left else returns 1
+ - **iterator** - arguments iterator
+ - **item** - **Cap_Item** to store argument
+
+### Cap_Value
+Returns flag value(if some) and moves the iterator forward:
+```c
+char* Cap_Value(Cap_Iterator* iterator, Cap_Item* item);
+```
+ - **returns** - **NULL** if the flag has no value, else returns pointer to it
+ - **iterator** - arguments iterator
+ - **item** - flag to check
+
+```c
+#include <stdio.h>
+
+#define CAP_IMPLEMENTATION
+#include "cap.h"
+
+int main(void) {
+    char* argv[] = { "-d=2" };
+    int argc = 1;
+
+    Cap_Iterator args;
+    Cap_Init(argc, argv, &args);
+
+    Cap_Item d;
+    Cap_Next(&args, &d);
+    char* value = Cap_Value(&args, &d);
+    printf("%s\n", value); // 2
+
+    return 0;
+}
 ```

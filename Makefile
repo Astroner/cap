@@ -15,9 +15,9 @@ $(OBJECTS): %.o: %.c
 
 lib: src/cap.c src/cap.h
 	cat src/cap.h > cap.h
-	echo "#if defined(CAP_IMPLEMENTATION)" >> cap.h
+	echo "\n#if defined(CAP_IMPLEMENTATION)" >> cap.h
 	tail -n +2 src/cap.c >> cap.h
-	echo "#endif // CAP_IMPLEMENTATION" >> cap.h
+	echo "\n#endif // CAP_IMPLEMENTATION" >> cap.h
 
 .PHONY: tests
 tests: lib

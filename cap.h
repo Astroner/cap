@@ -8,18 +8,19 @@ typedef enum Cap_ItemType {
 } Cap_ItemType;
 
 typedef union Cap_ItemValue {
+    char* attached;
     struct {
-        char ch;
         char* attached;
+        char ch;
     } flag;
 
     char* arg;
 
     struct {
+        char* attached;
         char* str;
         int length;
         int terminated;
-        char* attached;
     } longFlag;
 } Cap_ItemValue;
 
@@ -40,7 +41,10 @@ void Cap_Init(int argc, char** argv, struct Cap_Iterator* iterator);
 int Cap_Next(Cap_Iterator* iterator, Cap_Item* item);
 int Cap_Check(Cap_Iterator* iterator, Cap_Item* item);
 
+char* Cap_Value(Cap_Iterator* iterator, Cap_Item* item);
+
 #endif // CAP_H
+
 #if defined(CAP_IMPLEMENTATION)
 
 #include <stddef.h>
@@ -154,5 +158,20 @@ int Cap_Next(Cap_Iterator* iterator, Cap_Item* item) {
 
 int Cap_Check(Cap_Iterator* iterator, Cap_Item* item) {
     return CapInternalRead(iterator, item, 1);
+}
+
+char* Cap_Value(Cap_Iterator* iterator, Cap_Item* item) {
+    if(item->type == CAP_ARG) return NULL;
+
+    if(item->value.attached) return item->value.attached;
+
+    Cap_Item value;
+    Cap_Check(iterator, &value);
+
+    if(value.type != CAP_ARG) return NULL;
+
+    Cap_Next(iterator, NULL);
+
+    return value.value.arg;
 }
 #endif // CAP_IMPLEMENTATION

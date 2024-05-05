@@ -108,4 +108,29 @@ DESCRIBE(main) {
 
         EXPECT(&results) TO_HAVE_BYTES(expected, sizeof(expected));
     }
+
+    IT("reads values correctly") {
+        char* argv[] = { "-a=22", "-b", "33", "-c" };
+        char argc = sizeof(argv)/sizeof(argv[0]);
+
+        Cap_Iterator args;
+        Cap_Init(argc, argv, &args);
+
+        Cap_Item arg;
+
+        Cap_Next(&args, &arg);
+        EXPECT(arg.type) TO_BE(CAP_FLAG);
+        EXPECT(arg.value.flag.ch) TO_BE('a');
+        EXPECT(Cap_Value(&args, &arg)) TO_BE_STRING("22");
+
+        Cap_Next(&args, &arg);
+        EXPECT(arg.type) TO_BE(CAP_FLAG);
+        EXPECT(arg.value.flag.ch) TO_BE('b');
+        EXPECT(Cap_Value(&args, &arg)) TO_BE_STRING("33");
+
+        Cap_Next(&args, &arg);
+        EXPECT(arg.type) TO_BE(CAP_FLAG);
+        EXPECT(arg.value.flag.ch) TO_BE('c');
+        EXPECT(Cap_Value(&args, &arg)) TO_BE_NULL;
+    }
 }
