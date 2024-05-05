@@ -1,9 +1,6 @@
 #if !defined(CAP_H)
 #define CAP_H
 
-#define FOR_EACH_ARG(ARGC, ARGV)\
-    for(Cap_Iterator CAPCURITER, *CAPCURITER_I = Cap_Init(ARGC, ARGV, CAPCURITER);) 
-
 typedef enum Cap_ItemType {
     CAP_FLAG = 0,
     CAP_LONG_FLAG = 1,
@@ -33,6 +30,7 @@ typedef struct Cap_Iterator {
     char** argv;
     int index;
     char* mergedFlagsCursor;
+    Cap_Item current;
 } Cap_Iterator;
 
 void Cap_Init(int argc, char** argv, struct Cap_Iterator* iterator);
@@ -44,7 +42,7 @@ int Cap_Check(Cap_Iterator* iterator, Cap_Item* item);
 
 #include <stddef.h>
 
-int Cap_Init(int argc, char** argv, struct Cap_Iterator* iterator) {
+void Cap_Init(int argc, char** argv, struct Cap_Iterator* iterator) {
     iterator->argc = argc;
     iterator->argv = argv;
     iterator->index = 0;
