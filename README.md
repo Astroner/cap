@@ -12,11 +12,13 @@ This is Cap, a [single-file](https://raw.githubusercontent.com/Astroner/cap/mast
      - [CAP_PARSE_SWITCH](#cap_parse_switch)
          - [CAP_FLAGS](#cap_flags)
              - [CAP_MATCH_FLAG](#cap_match_flag)
+             - [CAP_ADD_FLAG_MATCH](#cap_add_flag_match)
              - [CAP_UNMATCHED_FLAGS](#cap_unmatched_flags)
          - [CAP_LONG_FLAGS](#cap_long_flags)
              - [CAP_MATCH_LFLAG](#cap_match_lflag)
              - [CAP_UNMATCHED_LFLAGS](#cap_unmatched_lflags)
          - [CAP_ARGS](#cap_args)
+         - [CAP_CHECK_NEXT](#cap_check_next)
 
 
 ## Supported formats
@@ -76,6 +78,7 @@ typedef struct Cap_Item {
 **Cap_ItemType** is an enum that stores info about argument type:
 ```c
 typedef enum Cap_ItemType {
+    CAP_NONE = -1, // No argument
     CAP_FLAG = 0, // single char flag
     CAP_LONG_FLAG = 1, // long flag
     CAP_ARG = 2, // general arg
@@ -111,7 +114,7 @@ int Cap_Check(Cap_Iterator* iterator, Cap_Item* item);
 ```
  - **returns** - 0 if no args left else returns 1
  - **iterator** - arguments iterator
- - **item** - **Cap_Item** to store argument
+ - **item** - **Cap_Item** to store argument. If no arg, then **item.type** will be set to **CAP_NONE**.
 
 ### Cap_Value
 Returns flag value(if some) and moves the iterator forward:
@@ -120,7 +123,7 @@ char* Cap_Value(Cap_Iterator* iterator, Cap_Item* item);
 ```
  - **returns** - **NULL** if the flag has no value, else returns pointer to it
  - **iterator** - arguments iterator
- - **item** - flag to check
+ - **item** - flag to check. If no arg, then **item.type** will be set to **CAP_NONE**.
 
 ```c
 #include <stdio.h>
@@ -298,6 +301,45 @@ This code snippet matches flag **-o** and it's value.
  - **CHAR** - **char** - flag character
  - **CODE** - code block to perform with the flag
 
+###### CAP_ADD_FLAG_MATCH
+This macro helps when there are 2 similar flags with slightly different actions, so it is easier to handle them at the same place:
+```c
+#include <stdio.h>
+
+#define CAP_IMPLEMENTATION
+#include "cap.h"
+
+int main(int argc, char** argv) {
+    CAP_PARSE_SWITCH(argc - 1, argv + 1) {
+        CAP_FLAGS(
+            CAP_ADD_FLAG_MATCH('O')
+            CAP_MATCH_FLAG('o', {
+                if(Cap_getCurrentFlag() == 'O') {
+                    printf("Capital o\n");
+                }
+                char* value = Cap_getFlagValue();
+                printf("-o %s\n", value);
+            })
+        )
+    }
+
+    return 0;
+}
+``` 
+Basically this macro is equivalent of combining multiple **cases**:
+```c
+switch(ch) {
+    case 'O':
+    case 'o':
+        // ...
+        break;
+}
+```
+Use macro **Cap_getCurrentFlag()** to get the current flag.
+```c
+char Cap_getCurrentFlag();
+```
+
 ##### CAP_UNMATCHED_FLAGS
 Handles unmatched flags
 
@@ -449,3 +491,40 @@ This code snippet prints out all the general arguments
 ```
  - **NAME** - __char*__ variable name to store the argument
  - **CODE** - code block to perform
+
+#### CAP_CHECK_NEXT
+This macro is an equivalent of [Cap_Check](#cap_check) but for [CAP_PARSE_SWITCH](#cap_parse_switch).
+```c
+#include <stdio.h>
+
+#define CAP_IMPLEMENTATION
+#include "cap.h"
+
+int main(int argc, char** argv) {
+    CAP_PARSE_SWITCH(argc - 1, argv + 1) {
+        CAP_FLAGS(
+            CAP_MATCH_FLAG('o', {
+                char* value = NULL;
+
+                CAP_CHECK_NEXT(check) {
+                    if(check.type == CAP_ARG && check.value.arg[0] == 'a') {
+                        value = check.value.arg;
+                        CAP_CHECK_CONFIRM();
+                    }
+                }
+
+                if(value) {
+                    printf("Flag -o has a value '%s' that begins with 'a'", value);
+                } else {
+                    printf("Flag -o has no value that begins with 'a'");
+                }
+            })
+        )
+    }
+
+    return 0;
+}
+```
+**CAP_CHECK_NEXT** allows conditional value check. It can be used inside of any **CAP_PARSE_SWITCH** block.
+
+Macro **CAP_CHECK_CONFIRM()** confirms the check and moves the iterator forward.

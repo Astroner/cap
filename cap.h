@@ -6,6 +6,7 @@
     #define CAP_STRN_CMP strncmp
 #endif // CAP_STR_CMP
 
+#define CAP_NONE -1
 #define CAP_FLAG 0
 #define CAP_LONG_FLAG 1
 #define CAP_ARG 2
@@ -44,7 +45,7 @@ typedef struct Cap_Iterator {
 } Cap_Iterator;
 
 // Functions
-void* Cap_Init(int argc, char** argv, struct Cap_Iterator* iterator);
+void Cap_Init(int argc, char** argv, struct Cap_Iterator* iterator);
 int Cap_Next(Cap_Iterator* iterator, Cap_Item* item);
 int Cap_Check(Cap_Iterator* iterator, Cap_Item* item);
 
@@ -68,7 +69,7 @@ char* Cap_Value(Cap_Iterator* iterator, Cap_Item* item);
  * }
 */
 #define CAP_FOR_EACH(ARGC, ARGV, ARGS_NAME, ARG_NAME)\
-    for(Cap_Iterator ARGS_NAME, *CAP_ARGS_NAME_LIFETIME = Cap_Init(ARGC, ARGV, &ARGS_NAME); CAP_ARGS_NAME_LIFETIME != (void*)0x1; CAP_ARGS_NAME_LIFETIME = (void*)0x1)\
+    for(Cap_Iterator ARGS_NAME, *CAP_ARGS_NAME_LIFETIME = (Cap_Init(ARGC, ARGV, &ARGS_NAME), (void*)0x0); CAP_ARGS_NAME_LIFETIME != (void*)0x1; CAP_ARGS_NAME_LIFETIME = (void*)0x1)\
         for(Cap_Item ARG_NAME, *CAP_ARG_NAME_LIFETIME = (void*)0; CAP_ARG_NAME_LIFETIME!= (void*)0x1; CAP_ARG_NAME_LIFETIME = (void*)0x1)\
             while(Cap_Next(&ARGS_NAME, &ARG_NAME))
 
@@ -119,6 +120,25 @@ char* Cap_Value(Cap_Iterator* iterator, Cap_Item* item);
     case CHAR:\
         CODE\
         continue;
+
+/**
+ * Only to use inside of CAP_FLAGS and before CAP_MATCH_FLAG
+ * 
+ * Add additional flag to match with the next CAP_MATCH_FLAG statement
+ * 
+ * CAP_FLAGS(
+ *      CAP_ADD_FLAG_MATCH('A')
+ *      CAP_MATCH_FLAG('a', {
+ *          if(Cap_getCurrentFlag() == 'A') {
+ *              // do additional actions
+ *          }
+ *          // code...
+ *      })
+ *      // ...
+ * )
+*/
+#define CAP_ADD_FLAG_MATCH(CHAR)\
+    case CHAR:
 
 /**
  * Only to use inside of CAP_FLAGS
@@ -233,6 +253,49 @@ char* Cap_Value(Cap_Iterator* iterator, Cap_Item* item);
 */
 #define Cap_getFlagValue() Cap_Value(&CAP_LOCAL_ARGS, &CAP_LOCAL_ARG)
 
+/**
+ * Only to use inside of CAP_MATCH_FLAG, CAP_MATCH_LFLAG or CAP_ARGS
+ * 
+ * Check next Cap_Item(equivalent of Cap_Check buf for CAP_PARSE_SWITCH)
+ * 
+ * NAME - Cap_Item variable name
+ * 
+ * Example:
+ * CAP_FLAGS(
+ *      CAP_MATCH_FLAG('o', {
+ *          CAP_CHECK_NEXT(conditionalValue) {
+ *              printf("%d\n", conditionalValue.type);
+ *          } 
+ *      })
+ * )
+*/
+#define CAP_CHECK_NEXT(NAME)\
+    for(Cap_Item NAME, *CAP_LOCAL_CHECK_LIFETIME = (Cap_Check(&CAP_LOCAL_ARGS, &NAME), (void*)0x0); CAP_LOCAL_CHECK_LIFETIME != (void*)0x1; CAP_LOCAL_CHECK_LIFETIME = (void*)0x1)
+
+/**
+ * Only to use inside of CAP_CHECK_NEXT
+ * 
+ * Confirms the check and moves the iterator forward
+ *
+ * Example:
+ * CAP_FLAGS(
+ *      CAP_MATCH_FLAG('o', {
+ *          CAP_CHECK_NEXT(conditionalValue) {
+ *              printf("%d\n", conditionalValue.type);
+ *              CAP_CHECK_CONFIRM()
+ *          } 
+ *      })
+ * )
+*/
+#define CAP_CHECK_CONFIRM()\
+    Cap_Next(&CAP_LOCAL_ARGS, &CAP_LOCAL_ARG)
+
+/**
+ * Only to use inside of CAP_MATCH_FLAG
+ * 
+ * Get current flag char
+*/
+#define Cap_getCurrentFlag() CAP_LOCAL_ARG.value.flag.ch
 
 #endif // CAP_H
 
@@ -240,13 +303,11 @@ char* Cap_Value(Cap_Iterator* iterator, Cap_Item* item);
 
 #include <stddef.h>
 
-void* Cap_Init(int argc, char** argv, struct Cap_Iterator* iterator) {
+void Cap_Init(int argc, char** argv, struct Cap_Iterator* iterator) {
     iterator->argc = argc;
     iterator->argv = argv;
     iterator->index = 0;
     iterator->mergedFlagsCursor = NULL;
-
-    return NULL;
 }
 
 int CapInternalRead(Cap_Iterator* iterator, Cap_Item* item, int isDry) {
@@ -278,6 +339,7 @@ int CapInternalRead(Cap_Iterator* iterator, Cap_Item* item, int isDry) {
     }
 
     if(iterator->index >= iterator->argc) {
+        item->type = CAP_NONE;
         return 0;
     }
 
