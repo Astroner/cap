@@ -2,11 +2,13 @@
 
 #include <stddef.h>
 
-void Cap_Init(int argc, char** argv, struct Cap_Iterator* iterator) {
+void* Cap_Init(int argc, char** argv, struct Cap_Iterator* iterator) {
     iterator->argc = argc;
     iterator->argv = argv;
     iterator->index = 0;
     iterator->mergedFlagsCursor = NULL;
+
+    return NULL;
 }
 
 int CapInternalRead(Cap_Iterator* iterator, Cap_Item* item, int isDry) {
