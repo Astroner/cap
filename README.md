@@ -427,6 +427,8 @@ This code snippet matches flag **--input** and prints it's value
  - **NAME** - __char*__ - flag name
  - **CODE** - code block to perform
 
+> By default this macro uses *string.h* **strncmp()** function to compare strings, but this function can be changed by defining **CAP_STRN_CMP** macro with a function name to replace the default one before including *cap.h*
+
 ##### CAP_UNMATCHED_LFLAGS
 Handles unpatched multi-char flags
 ```c
