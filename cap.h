@@ -1,3 +1,5 @@
+// Docs: https://github.com/Astroner/cap
+
 #if !defined(CAP_H)
 #define CAP_H
 
