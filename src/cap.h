@@ -43,7 +43,6 @@ typedef struct Cap_Iterator {
     char** argv;
     int index;
     char* mergedFlagsCursor;
-    Cap_Item current;
 } Cap_Iterator;
 
 // Functions
@@ -52,7 +51,7 @@ int Cap_Next(Cap_Iterator* iterator, Cap_Item* item);
 int Cap_Check(Cap_Iterator* iterator, Cap_Item* item);
 
 char* Cap_Value(Cap_Iterator* iterator, Cap_Item* item);
-
+void Cap_Parse(char* arg, Cap_Item* result);
 
 // Macros
 /**

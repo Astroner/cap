@@ -147,6 +147,26 @@ int main(void) {
 }
 ```
 
+### Cap_Parse
+Parses string as CLI argument
+```c
+#include <stdio.h>
+#include <assert.h>
+
+#define CAP_IMPLEMENTATION
+#include "cap.h"
+
+int main(void) {
+    Cap_Item result;
+    Cap_Parse("--flag", &result);
+
+    assert(result.type == CAP_LONG_FLAG);
+    printf("flag: --%s\n", result.value.longFlag.str); // flag: --flag
+
+    return 0;
+}
+```
+
 ## Helper macros
 ### CAP_FOR_EACH
 This macro simplifies iteration over the arguments:

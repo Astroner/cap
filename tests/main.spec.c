@@ -133,4 +133,36 @@ DESCRIBE(main) {
         EXPECT(arg.value.flag.ch) TO_BE('c');
         EXPECT(Cap_Value(&args, &arg)) TO_BE_NULL;
     }
+
+    IT("parses value correctly") {
+        Cap_Item item;
+        Cap_Parse("ss", &item);
+        EXPECT(item.type) TO_BE(CAP_ARG);
+        EXPECT(item.value.arg) TO_BE_STRING("ss");
+
+
+        Cap_Parse("-s", &item);
+        EXPECT(item.type) TO_BE(CAP_FLAG);
+        EXPECT(item.value.flag.ch) TO_BE('s');
+        EXPECT(item.value.flag.attached) TO_BE_NULL;
+
+        Cap_Parse("-s=arg", &item);
+        EXPECT(item.type) TO_BE(CAP_FLAG);
+        EXPECT(item.value.flag.ch) TO_BE('s');
+        EXPECT(item.value.flag.attached) TO_BE_STRING("arg");
+
+        Cap_Parse("--flag", &item);
+        EXPECT(item.type) TO_BE(CAP_LONG_FLAG);
+        EXPECT(item.value.longFlag.str) TO_BE_STRING("flag");
+        EXPECT(item.value.longFlag.length) TO_BE(4);
+        EXPECT(item.value.longFlag.terminated) TO_BE_TRUTHY;
+        EXPECT(item.value.longFlag.attached) TO_BE_NULL;
+
+        Cap_Parse("--flag=value", &item);
+        EXPECT(item.type) TO_BE(CAP_LONG_FLAG);
+        EXPECT(item.value.longFlag.str) TO_HAVE_RAW_BYTES('f', 'l', 'a', 'g');
+        EXPECT(item.value.longFlag.length) TO_BE(4);
+        EXPECT(item.value.longFlag.terminated) TO_BE_FALSY;
+        EXPECT(item.value.longFlag.attached) TO_BE_STRING("value");
+    }
 }
