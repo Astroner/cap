@@ -7,6 +7,7 @@ This is Cap, a [single-file](https://raw.githubusercontent.com/Astroner/cap/mast
  - [Helper functions](#helper-functions)
      - [Cap_Check](#cap_check)
      - [Cap_Value](#cap_value)
+     - [Cap_Parse](#cap_parse)
  - [Helper macros](#helper-macros)
      - [CAP_FOR_EACH](#cap_for_each)
      - [CAP_PARSE_SWITCH](#cap_parse_switch)
