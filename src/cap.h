@@ -70,8 +70,8 @@ void Cap_Parse(char* arg, Cap_Item* result);
  * }
 */
 #define CAP_FOR_EACH(ARGC, ARGV, ARGS_NAME, ARG_NAME)\
-    for(Cap_Iterator ARGS_NAME, *CAP_ARGS_NAME_LIFETIME = (Cap_Init(ARGC, ARGV, &ARGS_NAME), (void*)0x0); CAP_ARGS_NAME_LIFETIME != (void*)0x1; CAP_ARGS_NAME_LIFETIME = (void*)0x1)\
-        for(Cap_Item ARG_NAME, *CAP_ARG_NAME_LIFETIME = (void*)0; CAP_ARG_NAME_LIFETIME!= (void*)0x1; CAP_ARG_NAME_LIFETIME = (void*)0x1)\
+    for(Cap_Iterator ARGS_NAME, *CAP_ARGS_NAME_LIFETIME = (Cap_Init(ARGC, ARGV, &ARGS_NAME), (void*)0x0); CAP_ARGS_NAME_LIFETIME != (void*)0x1;)\
+        for(Cap_Item ARG_NAME; CAP_ARGS_NAME_LIFETIME != (void*)0x1; CAP_ARGS_NAME_LIFETIME = (void*)0x1)\
             while(Cap_Next(&ARGS_NAME, &ARG_NAME))
 
 /**
