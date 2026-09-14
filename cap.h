@@ -43,6 +43,7 @@ typedef struct Cap_Iterator {
     char** argv;
     int index;
     char* mergedFlagsCursor;
+    int argsOnly;
 } Cap_Iterator;
 
 // Functions
@@ -208,7 +209,7 @@ void Cap_Parse(char* arg, Cap_Item* result);
  * 
  * Match multi-char flag
  * 
- * NAME - char* - flag name
+ * NAME - char* - flag name, it MUST be a string literal
  * CODE - code block
  * 
  * Example:
@@ -220,7 +221,10 @@ void Cap_Parse(char* arg, Cap_Item* result);
  * )
 */
 #define CAP_MATCH_LFLAG(NAME, CODE)\
-    if(CAP_STRN_CMP(CAP_LOCAL_ARG.value.longFlag.str, NAME, CAP_LOCAL_ARG.value.longFlag.length) == 0) {\
+    if(\
+        CAP_STRN_CMP(CAP_LOCAL_ARG.value.longFlag.str, NAME, CAP_LOCAL_ARG.value.longFlag.length) == 0\
+        && sizeof(NAME) - 1 == CAP_LOCAL_ARG.value.longFlag.length\
+    ) {\
         CODE\
         continue;\
     }
@@ -303,20 +307,26 @@ void Cap_Parse(char* arg, Cap_Item* result);
 #if defined(CAP_IMPLEMENTATION)
 
 #include <stddef.h>
+#include <stdio.h>
 
 void Cap_Init(int argc, char** argv, struct Cap_Iterator* iterator) {
     iterator->argc = argc;
     iterator->argv = argv;
     iterator->index = 0;
     iterator->mergedFlagsCursor = NULL;
+    iterator->argsOnly = 0;
 }
 
-void CapInternalParse(char* arg, Cap_Item* result, Cap_Iterator* iterator) {
-    if(arg[0] == '-') {
+int CapInternalParse(char* arg, Cap_Item* result, Cap_Iterator* iterator, int argsOnly) {
+    if(arg[0] == '-' && !argsOnly) {
         char* cursor = arg + 1;
         char ch;
         if(arg[1] == '-') {
             cursor = cursor + 1;
+
+            if(arg[2] == '\0') {
+                return 0;
+            }
 
             if(result) {
                 result->type = CAP_LONG_FLAG;
@@ -330,15 +340,18 @@ void CapInternalParse(char* arg, Cap_Item* result, Cap_Iterator* iterator) {
                 if(ch == '=') {
                     if(result) {
                         result->value.longFlag.terminated = 0;
-                        if(cursor[0]) {
-                            result->value.longFlag.attached = cursor;
-                        }
+                        result->value.longFlag.attached = cursor;
                     }
 
                     break;
                 } else if(result) {
                     result->value.longFlag.length += 1;
                 }
+            }
+        } else if(arg[1] == '\0') {
+            if(result) {
+                result->type = CAP_ARG;
+                result->value.arg = arg;
             }
         } else {
             char ch = cursor[0];
@@ -354,7 +367,7 @@ void CapInternalParse(char* arg, Cap_Item* result, Cap_Iterator* iterator) {
                     break;
                 
                 case '=':
-                    if(cursor[2] && result) {
+                    if(result) {
                         result->value.flag.attached = cursor + 2;
                     }
 
@@ -370,6 +383,8 @@ void CapInternalParse(char* arg, Cap_Item* result, Cap_Iterator* iterator) {
     }
 
     if(iterator) iterator->index++;
+
+    return 1;
 }
 
 int CapInternalRead(Cap_Iterator* iterator, Cap_Item* item, int isDry) {
@@ -387,9 +402,10 @@ int CapInternalRead(Cap_Iterator* iterator, Cap_Item* item, int isDry) {
                 break;
             
             case '=':
-                if(iterator->mergedFlagsCursor[2]) {
+                if(item) {
                     item->value.flag.attached = iterator->mergedFlagsCursor + 2;
                 }
+
                 if(!isDry) iterator->mergedFlagsCursor = NULL;
                 break;
             
@@ -401,11 +417,31 @@ int CapInternalRead(Cap_Iterator* iterator, Cap_Item* item, int isDry) {
     }
 
     if(iterator->index >= iterator->argc) {
-        item->type = CAP_NONE;
+        if(item) {
+            item->type = CAP_NONE;
+        }
+
         return 0;
     }
 
-    CapInternalParse(iterator->argv[iterator->index], item, isDry ? NULL : iterator);
+    if(!CapInternalParse(iterator->argv[iterator->index], item, isDry ? NULL : iterator, iterator->argsOnly)) {
+        if(isDry) {
+            if(iterator->index + 1 < iterator->argc) {
+                CapInternalParse(iterator->argv[iterator->index + 1], item, NULL, 1);
+
+                return 1;
+            }
+
+            if(item) {
+                item->type = CAP_NONE;
+            }
+            return 0;
+        } else {
+            iterator->argsOnly = 1;
+            iterator->index = iterator->index + 1;
+            return CapInternalRead(iterator, item, isDry);
+        }
+    }
 
     return 1;
 }
@@ -434,6 +470,10 @@ char* Cap_Value(Cap_Iterator* iterator, Cap_Item* item) {
 }
 
 void Cap_Parse(char* arg, Cap_Item* result) {
-    CapInternalParse(arg, result, NULL);
+    if(result) {
+        result->type = CAP_NONE;
+    }
+
+    CapInternalParse(arg, result, NULL, 0);
 }
 #endif // CAP_IMPLEMENTATION

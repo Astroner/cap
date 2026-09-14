@@ -7,7 +7,26 @@
 
 DESCRIBE(main) {
     IT("reads arguments correctly") {
-        char* argv[] = { "arg1", "arg2", "-dfc=val", "-p", "arg3", "-b", "arg4", "--flag", "--str=val", "arg5" };
+        char* argv[] = {
+            "arg1",
+            "arg2",
+            "-dfc=val",
+            "-p",
+            "arg3",
+            "-b",
+            "arg4",
+            "--flag",
+            "--str=val",
+            "arg5",
+            "-",
+            "-x=",
+            "--empty=",
+            "-lm=",
+            "-z",
+            "--",
+            "-y",
+            "--posArg",
+        };
         int argc = sizeof(argv) / sizeof(argv[0]);
 
         Cap_Iterator argsIterator;
@@ -19,15 +38,23 @@ DESCRIBE(main) {
             int hasArg3;
             int hasArg4;
             int hasArg5;
+            int hasDashArg;
+            int hasYArg;
+            int hasPosArg;
 
             int hasD;
             int hasF;
             int hasC;
             int hasP;
             int hasB;
+            int hasX;
+            int hasZ;
+            int hasL;
+            int hasM;
 
             int hasFlag;
             int hasStr;
+            int hasEmpty;
         } results = {0};
 
         Cap_Item arg;
@@ -64,6 +91,35 @@ DESCRIBE(main) {
                             EXPECT(arg.value.flag.attached) TO_BE_NULL;
 
                             break;
+
+                        case 'x':
+                            results.hasX = 1;
+                            EXPECT(arg.value.flag.attached) TO_BE_STRING("");
+
+                            break;
+
+                        case 'z':
+                            results.hasZ = 1;
+                            EXPECT(arg.value.flag.attached) TO_BE_NULL;
+
+                            Cap_Item nextZ;
+                            Cap_Check(&argsIterator, &nextZ);
+                            EXPECT(nextZ.type) TO_BE(CAP_ARG);
+                            EXPECT(nextZ.value.arg) TO_BE_STRING("-y");
+
+                            break;
+
+                        case 'l':
+                            results.hasL = 1;
+                            EXPECT(arg.value.flag.attached) TO_BE_NULL;
+
+                            break;
+
+                        case 'm':
+                            results.hasM = 1;
+                            EXPECT(arg.value.flag.attached) TO_BE_STRING("");
+
+                            break;
                     }
                     break;
                 
@@ -78,6 +134,12 @@ DESCRIBE(main) {
                         results.hasArg4 = 1;
                     } else if(strcmp(arg.value.arg, "arg5") == 0) {
                         results.hasArg5 = 1;
+                    } else if(strcmp(arg.value.arg, "-") == 0) {
+                        results.hasDashArg = 1;
+                    } else if(strcmp(arg.value.arg, "-y") == 0) {
+                        results.hasYArg = 1;
+                    } else if(strcmp(arg.value.arg, "--posArg") == 0) {
+                        results.hasPosArg = 1;
                     }
 
                     break;
@@ -94,6 +156,12 @@ DESCRIBE(main) {
                             results.hasStr = 1;
                             EXPECT(arg.value.longFlag.attached) TO_BE_STRING("val");
                             EXPECT(arg.value.longFlag.length) TO_BE(3);  
+                        }
+
+                        if(strncmp(arg.value.longFlag.str, "empty", 5) == 0) {
+                            results.hasEmpty = 1;
+                            EXPECT(arg.value.longFlag.attached) TO_BE_STRING("");
+                            EXPECT(arg.value.longFlag.length) TO_BE(5);  
                         }
                     }
 
@@ -164,5 +232,12 @@ DESCRIBE(main) {
         EXPECT(item.value.longFlag.length) TO_BE(4);
         EXPECT(item.value.longFlag.terminated) TO_BE_FALSY;
         EXPECT(item.value.longFlag.attached) TO_BE_STRING("value");
+
+        Cap_Parse("--", &item);
+        EXPECT(item.type) TO_BE(CAP_NONE);
+
+        Cap_Parse("-", &item);
+        EXPECT(item.type) TO_BE(CAP_ARG);
+        EXPECT(item.value.arg) TO_BE_STRING("-");
     }
 }

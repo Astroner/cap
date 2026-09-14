@@ -43,6 +43,7 @@ typedef struct Cap_Iterator {
     char** argv;
     int index;
     char* mergedFlagsCursor;
+    int argsOnly;
 } Cap_Iterator;
 
 // Functions
@@ -208,7 +209,7 @@ void Cap_Parse(char* arg, Cap_Item* result);
  * 
  * Match multi-char flag
  * 
- * NAME - char* - flag name
+ * NAME - char* - flag name, it MUST be a string literal
  * CODE - code block
  * 
  * Example:
@@ -220,7 +221,10 @@ void Cap_Parse(char* arg, Cap_Item* result);
  * )
 */
 #define CAP_MATCH_LFLAG(NAME, CODE)\
-    if(CAP_STRN_CMP(CAP_LOCAL_ARG.value.longFlag.str, NAME, CAP_LOCAL_ARG.value.longFlag.length) == 0) {\
+    if(\
+        CAP_STRN_CMP(CAP_LOCAL_ARG.value.longFlag.str, NAME, CAP_LOCAL_ARG.value.longFlag.length) == 0\
+        && sizeof(NAME) - 1 == CAP_LOCAL_ARG.value.longFlag.length\
+    ) {\
         CODE\
         continue;\
     }
